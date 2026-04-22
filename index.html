@@ -1,47 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Investment Tracker</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Investment Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
-      background: #f9fafb;
-    }
-    h1 { text-align: center; }
-    input, select, textarea, button {
-      padding: 12px;
-      margin: 5px 0;
-      width: 100%;
-      box-sizing: border-box;
-    }
-    .card {
-      background: white;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .card-header {
-      padding: 15px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-    }
-    .card-body {
-      padding: 15px;
-      border-top: 1px solid #eee;
-      background: #f8fafc;
-    }
-    .high { border-left: 6px solid #22c55e; }
-    .low { border-left: 6px solid #ef4444; }
-    .neutral { border-left: 6px solid #9ca3af; }
-  </style>
+<style>
+body {
+  font-family: 'Segoe UI', sans-serif;
+  padding: 20px;
+  max-width: 600px;
+  margin: auto;
+  background: #f9fafb;
+}
+h1 { text-align: center; }
+
+input, select, textarea, button {
+  padding: 12px;
+  margin: 5px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.card-header {
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+}
+.card-body {
+  padding: 15px;
+  border-top: 1px solid #eee;
+  background: #f8fafc;
+}
+
+.high { border-left: 6px solid #22c55e; }
+.low { border-left: 6px solid #ef4444; }
+.neutral { border-left: 6px solid #9ca3af; }
+
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+button.delete {
+  background: #ef4444;
+}
+</style>
 </head>
+
 <body>
 
 <h1>Investment Tracker</h1>
@@ -49,163 +63,178 @@
 <!-- SEARCH -->
 <input id="search" placeholder="Search address...">
 <select id="filter">
-  <option value="all">All</option>
-  <option value="high">High</option>
-  <option value="neutral">Neutral</option>
-  <option value="low">Low</option>
+<option value="all">All</option>
+<option value="high">High</option>
+<option value="neutral">Neutral</option>
+<option value="low">Low</option>
 </select>
 
 <!-- FORM -->
 <form id="form">
-  <select id="type">
-    <option value="land">Land</option>
-    <option value="house">House</option>
-  </select>
+<select id="type">
+<option value="land">Land</option>
+<option value="house">House</option>
+</select>
 
-  <input id="address" placeholder="Address" required>
+<input id="address" placeholder="Address" required>
 
-  <div id="houseFields" style="display:none;">
-   <input id="sqft" placeholder="Sq Ft" type="number" step="1">
-  <input id="beds" placeholder="Beds" type="number" step="0.1">
-  <input id="baths" placeholder="Baths" type="number" step="0.1">
-  </div>
+<div id="houseFields" style="display:none;">
+<input id="sqft" placeholder="Sq Ft" type="number" step="1">
+<input id="beds" placeholder="Beds" type="number" step="0.1">
+<input id="baths" placeholder="Baths" type="number" step="0.1">
+</div>
 
-    <input id="acres" placeholder="Acres" type="number" step="0.01">
-  <input id="cost" placeholder="Cost" type="number" step="0.01">
-  <input id="flood" placeholder="Flood Factor" type="number" step="0.1">
-  <input id="topo" placeholder="Topography">
-  <textarea id="desc" placeholder="Description"></textarea>
+<input id="acres" placeholder="Acres" type="number" step="0.01">
+<input id="cost" placeholder="Cost" type="number" step="0.01" required>
+<input id="flood" placeholder="Flood Factor" type="number" step="0.1">
+<input id="topo" placeholder="Topography">
+<textarea id="desc" placeholder="Description"></textarea>
 
-  <select id="interest">
-    <option value="neutral">Neutral</option>
-    <option value="high">High</option>
-    <option value="low">Low</option>
-  </select>
+<select id="interest">
+<option value="neutral">Neutral</option>
+<option value="high">High</option>
+<option value="low">Low</option>
+</select>
 
-  <button type="submit">Save Property</button>
+<button type="submit">Save Property</button>
 </form>
 
 <!-- LIST -->
 <div id="listings"></div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore,
-    collection,
-    addDoc,
-    onSnapshot,
-    deleteDoc,
-    doc
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  onSnapshot,
+  deleteDoc,
+  doc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // 🔥 YOUR FIREBASE CONFIG HERE
-  const firebaseConfig = {
-    apiKey: "YOUR_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID"
-  };
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  let listings = [];
-  let openId = null;
+let listings = [];
+let openId = null;
 
-  const listDiv = document.getElementById("listings");
+const listDiv = document.getElementById("listings");
 
-  // 🔄 REALTIME LISTENER
-  onSnapshot(collection(db, "listings"), (snapshot) => {
-    listings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    render();
-  });
+// ✅ SAFE NUMBER PARSER
+const getNumber = (id) => {
+  const val = document.getElementById(id).value;
+  return val === "" ? null : parseFloat(val);
+};
 
-  // 🎯 RENDER FUNCTION
-  function render() {
-    const search = document.getElementById("search").value.toLowerCase();
-    const filter = document.getElementById("filter").value;
+// 🔄 REALTIME LISTENER
+onSnapshot(collection(db, "listings"), (snapshot) => {
+  listings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+  render();
+});
 
-    listDiv.innerHTML = "";
+// 💰 FORMATTERS
+const formatMoney = (num) =>
+  num != null ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
 
-    listings
-      .filter(item => {
-        const matchSearch = item.address?.toLowerCase().includes(search) || false;
-        const matchFilter = filter === "all" || item.interest === filter;
-        return matchSearch && matchFilter;
-      })
-      .forEach(item => {
-        const div = document.createElement("div");
-        div.className = `card ${item.interest}`;
+const formatNumber = (num) =>
+  num != null ? num : "";
 
-        div.innerHTML = `
-          <div class="card-header">
-            <strong>${item.address}</strong>
-            <span>${openId === item.id ? '▲' : '▼'}</span>
+// 🎯 RENDER
+function render() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const filter = document.getElementById("filter").value;
+
+  listDiv.innerHTML = "";
+
+  listings
+    .filter(item => {
+      const matchSearch = item.address?.toLowerCase().includes(search) || false;
+      const matchFilter = filter === "all" || item.interest === filter;
+      return matchSearch && matchFilter;
+    })
+    .forEach(item => {
+      const div = document.createElement("div");
+      div.className = `card ${item.interest}`;
+
+      div.innerHTML = `
+        <div class="card-header">
+          <strong>${item.address}</strong>
+          <span>${openId === item.id ? '▲' : '▼'}</span>
+        </div>
+        ${openId === item.id ? `
+          <div class="card-body">
+            <p><b>Type:</b> ${item.type}</p>
+            ${item.type === 'house' ? `
+              <p>${formatNumber(item.sqft)} sqft | 
+              ${formatNumber(item.beds)} bed | 
+              ${formatNumber(item.baths)} bath</p>` : ""}
+            <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
+            <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
+            <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
+            <p>${item.description || ""}</p>
+            <button class="delete">Delete</button>
           </div>
-          ${openId === item.id ? `
-            <div class="card-body">
-              <p><b>Type:</b> ${item.type}</p>
-              ${item.type === 'house' ? `<p>${item.sqft} sqft | ${item.beds} bed | ${item.baths} bath</p>` : ""}
-              <p><b>Cost:</b> $${item.cost}</p>
-              <p><b>Acres:</b> ${item.acres}</p>
-              <p>${item.description || ""}</p>
-              <button data-id="${item.id}">Delete</button>
-            </div>
-          ` : ""}
-        `;
+        ` : ""}
+      `;
 
-        // Toggle open
-        div.querySelector(".card-header").onclick = () => {
-          openId = openId === item.id ? null : item.id;
-          render();
+      // Toggle open
+      div.querySelector(".card-header").onclick = () => {
+        openId = openId === item.id ? null : item.id;
+        render();
+      };
+
+      // Delete
+      const btn = div.querySelector(".delete");
+      if (btn) {
+        btn.onclick = async () => {
+          if (confirm("Delete this property?")) {
+            await deleteDoc(doc(db, "listings", item.id));
+          }
         };
+      }
 
-        // Delete
-        const btn = div.querySelector("button");
-        if (btn) {
-          btn.onclick = async () => {
-            if (confirm("Delete this property?")) {
-              await deleteDoc(doc(db, "listings", item.id));
-            }
-          };
-        }
+      listDiv.appendChild(div);
+    });
+}
 
-        listDiv.appendChild(div);
-      });
-  }
+// EVENTS
+document.getElementById("search").oninput = render;
+document.getElementById("filter").onchange = render;
 
-  // 🔍 SEARCH + FILTER EVENTS
-  document.getElementById("search").oninput = render;
-  document.getElementById("filter").onchange = render;
+document.getElementById("type").onchange = (e) => {
+  document.getElementById("houseFields").style.display =
+    e.target.value === "house" ? "block" : "none";
+};
 
-  // 🏠 TOGGLE HOUSE FIELDS
-  document.getElementById("type").onchange = (e) => {
-    document.getElementById("houseFields").style.display =
-      e.target.value === "house" ? "block" : "none";
+// SUBMIT
+document.getElementById("form").onsubmit = async (e) => {
+  e.preventDefault();
+
+  const data = {
+    type: document.getElementById("type").value,
+    address: document.getElementById("address").value,
+    acres: getNumber("acres"),
+    cost: getNumber("cost"),
+    floodFactor: getNumber("flood"),
+    topography: document.getElementById("topo").value,
+    description: document.getElementById("desc").value,
+    interest: document.getElementById("interest").value,
+    sqft: getNumber("sqft"),
+    beds: getNumber("beds"),
+    baths: getNumber("baths")
   };
 
-  // ➕ FORM SUBMIT
-  document.getElementById("form").onsubmit = async (e) => {
-    e.preventDefault();
+  await addDoc(collection(db, "listings"), data);
 
-    const data = {
-      type: document.getElementById("type").value,
-      address: document.getElementById("address").value,
-      acres: Number(document.getElementById("acres").value),
-      cost: Number(document.getElementById("cost").value),
-      floodFactor: Number(document.getElementById("flood").value),
-      topography: document.getElementById("topo").value,
-      description: document.getElementById("desc").value,
-      interest: document.getElementById("interest").value,
-      sqft: Number(document.getElementById("sqft").value),
-      beds: Number(document.getElementById("beds").value),
-      baths: Number(document.getElementById("baths").value)
-    };
-
-    await addDoc(collection(db, "listings"), data);
-
-    e.target.reset();
-  };
+  e.target.reset();
+};
 </script>
 
 </body>
