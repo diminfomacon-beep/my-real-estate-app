@@ -65,14 +65,14 @@
   <input id="address" placeholder="Address" required>
 
   <div id="houseFields" style="display:none;">
-    <input id="sqft" placeholder="Sq Ft" type="number">
-    <input id="beds" placeholder="Beds" type="number">
-    <input id="baths" placeholder="Baths" type="number">
+   <input id="sqft" placeholder="Sq Ft" type="number" step="1">
+  <input id="beds" placeholder="Beds" type="number" step="0.1">
+  <input id="baths" placeholder="Baths" type="number" step="0.1">
   </div>
 
-  <input id="acres" placeholder="Acres" type="number">
-  <input id="cost" placeholder="Cost" type="number" required>
-  <input id="flood" placeholder="Flood Factor" type="number">
+    <input id="acres" placeholder="Acres" type="number" step="0.01">
+  <input id="cost" placeholder="Cost" type="number" step="0.01">
+  <input id="flood" placeholder="Flood Factor" type="number" step="0.1">
   <input id="topo" placeholder="Topography">
   <textarea id="desc" placeholder="Description"></textarea>
 
