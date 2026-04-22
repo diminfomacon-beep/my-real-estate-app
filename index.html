@@ -61,6 +61,7 @@ button.delete {
 <body>
 
 <h1>Investment Tracker</h1>
+  <div id="status" style="text-align:center; margin-bottom:10px;"></div>
 
 <!-- SEARCH -->
 <input id="search" placeholder="Search address...">
@@ -108,6 +109,7 @@ button.delete {
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
+  enableIndexedDbPersistence,
   collection,
   addDoc,
   onSnapshot,
@@ -126,6 +128,11 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// 🔥 ENABLE OFFLINE DATA
+enableIndexedDbPersistence(db).catch((err) => {
+  console.log("Offline persistence error:", err);
+});
 
 let listings = [];
 let openId = null;
@@ -240,6 +247,14 @@ document.getElementById("form").onsubmit = async (e) => {
 
   e.target.reset();
 };
+  function updateStatus() {
+  const el = document.getElementById("status");
+  el.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
+}
+
+window.addEventListener("online", updateStatus);
+window.addEventListener("offline", updateStatus);
+updateStatus();
 </script>
   <script>
 if ("serviceWorker" in navigator) {
