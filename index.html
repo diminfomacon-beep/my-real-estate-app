@@ -177,10 +177,17 @@ button.delete {
           ` : ""}`;
 
         div.querySelector(".card-header").onclick = () => { openId = openId === item.id ? null : item.id; render(); };
-        div.querySelector(".delete")?.onclick = async () => {
-          if (confirm("Delete this property?")) await deleteDoc(doc(db, "listings", item.id));
-        };
-        div.querySelector(".edit")?.onclick = () => editItem(item);
+      div.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("delete")) {
+          if (confirm("Delete this property?")) {
+            await deleteDoc(doc(db, "listings", item.id));
+          }
+        }
+      
+        if (e.target.classList.contains("edit")) {
+          editItem(item);
+        }
+      });
         listDiv.appendChild(div);
       });
   }
