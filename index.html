@@ -113,7 +113,8 @@ import {
   collection,
   addDoc,
   onSnapshot,
-  Doc,
+  deleteDoc,
+  updateDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -128,53 +129,34 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-
-// 🔥 ENABLE OFFLINE DATA
-enableIndexedDbPersistence(db).catch((err) => {
-  console.log("Offline persistence error:", err);
-});
+enableIndexedDbPersistence(db).catch(console.error);
 
 let listings = [];
 let openId = null;
+let editId = null; // Track ID for edits
 
 const listDiv = document.getElementById("listings");
 
-// ✅ SAFE NUMBER PARSER
+// Helpers
 const getNumber = (id) => {
   const val = document.getElementById(id).value;
   return val === "" ? null : parseFloat(val);
 };
 
-// 🔄 REALTIME LISTENER
-onSnapshot(collection(db, "listings"), (snapshot) => {
-  listings = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-  render();
-});
+const formatMoney = (num) => num != null ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
+const formatNumber = (num) => num != null ? num : "";
 
-// 💰 FORMATTERS
-const formatMoney = (num) =>
-  num != null ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
-
-const formatNumber = (num) =>
-  num != null ? num : "";
-
-// 🎯 RENDER
+// Render Logic
 function render() {
   const search = document.getElementById("search").value.toLowerCase();
   const filter = document.getElementById("filter").value;
-
   listDiv.innerHTML = "";
 
   listings
-    .filter(item => {
-      const matchSearch = item.address?.toLowerCase().includes(search) || false;
-      const matchFilter = filter === "all" || item.interest === filter;
-      return matchSearch && matchFilter;
-    })
+    .filter(item => (item.address?.toLowerCase().includes(search) || false) && (filter === "all" || item.interest === filter))
     .forEach(item => {
       const div = document.createElement("div");
       div.className = `card ${item.interest}`;
-
       div.innerHTML = `
         <div class="card-header">
           <strong>${item.address}</strong>
@@ -183,58 +165,47 @@ function render() {
         ${openId === item.id ? `
           <div class="card-body">
             <p><b>Type:</b> ${item.type}</p>
-            ${item.type === 'house' ? `
-              <p>${formatNumber(item.sqft)} sqft | 
-              ${formatNumber(item.beds)} bed | 
-              ${formatNumber(item.baths)} bath</p>` : ""}
+            ${item.type === 'house' ? `<p>${formatNumber(item.sqft)} sqft | ${formatNumber(item.beds)} bed | ${formatNumber(item.baths)} bath</p>` : ""}
             <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
             <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
             <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
-            <p>${item.description || ""}</p>
-           <div class="card-body">
             <button class="edit">Edit</button>
             <button class="delete">Delete</button>
           </div>
-          </div>
-        ` : ""}
-      `;
+        ` : ""}`;
 
-      // Toggle open
-      div.querySelector(".card-header").onclick = () => {
-        openId = openId === item.id ? null : item.id;
-        render();
+      div.querySelector(".card-header").onclick = () => { openId = openId === item.id ? null : item.id; render(); };
+      
+      div.querySelector(".delete")?.onclick = async () => {
+        if (confirm("Delete this property?")) await deleteDoc(doc(db, "listings", item.id));
       };
-
-      // Delete
-      const btn = div.querySelector(".delete");
-      if (btn) {
-        btn.onclick = async () => {
-          if (confirm("Delete this property?")) {
-            await deleteDoc(doc(db, "listings", item.id));
-          }
-        };
-      }
-
+      
+      div.querySelector(".edit")?.onclick = () => editItem(item);
       listDiv.appendChild(div);
-      const editBtn = div.querySelector(".edit");
-      if (editBtn) {
-        editBtn.onclick = () => editItem(item);
-      }
     });
 }
 
-// EVENTS
-document.getElementById("search").oninput = render;
-document.getElementById("filter").onchange = render;
-
-document.getElementById("type").onchange = (e) => {
-  document.getElementById("houseFields").style.display =
-    e.target.value === "house" ? "block" : "none";
+// Edit handler
+const editItem = (item) => {
+  editId = item.id;
+  document.getElementById("type").value = item.type;
+  document.getElementById("address").value = item.address;
+  document.getElementById("acres").value = item.acres || "";
+  document.getElementById("cost").value = item.cost || "";
+  document.getElementById("flood").value = item.floodFactor || "";
+  document.getElementById("topo").value = item.topography || "";
+  document.getElementById("desc").value = item.description || "";
+  document.getElementById("interest").value = item.interest;
+  document.getElementById("sqft").value = item.sqft || "";
+  document.getElementById("beds").value = item.beds || "";
+  document.getElementById("baths").value = item.baths || "";
+  document.getElementById("houseFields").style.display = item.type === "house" ? "block" : "none";
+  window.scrollTo(0, 0);
 };
-// SUBMIT
+
+// Unified Submit
 document.getElementById("form").onsubmit = async (e) => {
   e.preventDefault();
-
   const data = {
     type: document.getElementById("type").value,
     address: document.getElementById("address").value,
@@ -249,63 +220,21 @@ document.getElementById("form").onsubmit = async (e) => {
     baths: getNumber("baths")
   };
 
-  await addDoc(collection(db, "listings"), data);
-
-  e.target.reset();
-};
-    let editId = null; // Add this with your other variables
-
-// Function to populate form for editing
-const editItem = (item) => {
-  editId = item.id;
-  document.getElementById("type").value = item.type;
-  document.getElementById("address").value = item.address;
-  document.getElementById("acres").value = item.acres || "";
-  document.getElementById("cost").value = item.cost || "";
-  document.getElementById("flood").value = item.floodFactor || "";
-  document.getElementById("topo").value = item.topography || "";
-  document.getElementById("desc").value = item.description || "";
-  document.getElementById("interest").value = item.interest;
-  document.getElementById("sqft").value = item.sqft || "";
-  document.getElementById("beds").value = item.beds || "";
-  document.getElementById("baths").value = item.baths || "";
-  
-  // Trigger house fields visibility
-  document.getElementById("houseFields").style.display = item.type === "house" ? "block" : "none";
-  window.scrollTo(0, 0); // Scroll up to see the form
-};
-  // Add updateDoc to your import list:
-import { ..., updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-// Update the submit event listener:
-document.getElementById("form").onsubmit = async (e) => {
-  e.preventDefault();
-  
-  const data = { /* ... your data object ... */ };
-
   if (editId) {
     await updateDoc(doc(db, "listings", editId), data);
-    editId = null; // Reset state
+    editId = null;
   } else {
     await addDoc(collection(db, "listings"), data);
   }
-
   e.target.reset();
+  document.getElementById("houseFields").style.display = "none";
 };
-  function updateStatus() {
-  const el = document.getElementById("status");
-  el.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
-}
 
-window.addEventListener("online", updateStatus);
-window.addEventListener("offline", updateStatus);
-updateStatus();
+// Listeners
+onSnapshot(collection(db, "listings"), (s) => { listings = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
+document.getElementById("search").oninput = render;
+document.getElementById("filter").onchange = render;
+document.getElementById("type").onchange = (e) => document.getElementById("houseFields").style.display = e.target.value === "house" ? "block" : "none";
 </script>
-  <script>
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
-}
-</script>
-
 </body>
 </html>
