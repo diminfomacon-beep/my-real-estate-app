@@ -159,7 +159,10 @@ button.delete {
         div.innerHTML = `
           <div class="card-header">
             <strong>${item.address}</strong>
-            <span>${openId === item.id ? '▲' : '▼'}</span>
+            <div>
+              <button class="edit" style="background:#3b82f6; font-size:12px;">Edit</button>
+              <span>${openId === item.id ? '▲' : '▼'}</span>
+            </div>
           </div>
           ${openId === item.id ? `
             <div class="card-body">
