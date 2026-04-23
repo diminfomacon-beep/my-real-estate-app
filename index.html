@@ -106,135 +106,144 @@ button.delete {
 <div id="listings"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getFirestore,
-  enableIndexedDbPersistence,
-  collection,
-  addDoc,
-  onSnapshot,
-  deleteDoc,
-  updateDoc,
-  doc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    enableIndexedDbPersistence,
+    collection,
+    addDoc,
+    onSnapshot,
+    deleteDoc,
+    updateDoc,
+    doc
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAkEAZd2EDvEj3Kv6FCtXv8aWpIG-Rwq6A",
-  authDomain: "real-estate-assessor.firebaseapp.com",
-  projectId: "real-estate-assessor",
-  storageBucket: "real-estate-assessor.firebasestorage.app",
-  messagingSenderId: "355094026419",
-  appId: "1:355094026419:web:bcd1b78e93f697382af8c6"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-enableIndexedDbPersistence(db).catch(console.error);
-
-let listings = [];
-let openId = null;
-let editId = null; // Track ID for edits
-
-const listDiv = document.getElementById("listings");
-
-// Helpers
-const getNumber = (id) => {
-  const val = document.getElementById(id).value;
-  return val === "" ? null : parseFloat(val);
-};
-
-const formatMoney = (num) => num != null ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
-const formatNumber = (num) => num != null ? num : "";
-
-// Render Logic
-function render() {
-  const search = document.getElementById("search").value.toLowerCase();
-  const filter = document.getElementById("filter").value;
-  listDiv.innerHTML = "";
-
-  listings
-    .filter(item => (item.address?.toLowerCase().includes(search) || false) && (filter === "all" || item.interest === filter))
-    .forEach(item => {
-      const div = document.createElement("div");
-      div.className = `card ${item.interest}`;
-      div.innerHTML = `
-        <div class="card-header">
-          <strong>${item.address}</strong>
-          <span>${openId === item.id ? '▲' : '▼'}</span>
-        </div>
-        ${openId === item.id ? `
-          <div class="card-body">
-            <p><b>Type:</b> ${item.type}</p>
-            ${item.type === 'house' ? `<p>${formatNumber(item.sqft)} sqft | ${formatNumber(item.beds)} bed | ${formatNumber(item.baths)} bath</p>` : ""}
-            <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
-            <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
-            <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
-            <button class="edit">Edit</button>
-            <button class="delete">Delete</button>
-          </div>
-        ` : ""}`;
-
-      div.querySelector(".card-header").onclick = () => { openId = openId === item.id ? null : item.id; render(); };
-      
-      div.querySelector(".delete")?.onclick = async () => {
-        if (confirm("Delete this property?")) await deleteDoc(doc(db, "listings", item.id));
-      };
-      
-      div.querySelector(".edit")?.onclick = () => editItem(item);
-      listDiv.appendChild(div);
-    });
-}
-
-// Edit handler
-const editItem = (item) => {
-  editId = item.id;
-  document.getElementById("type").value = item.type;
-  document.getElementById("address").value = item.address;
-  document.getElementById("acres").value = item.acres || "";
-  document.getElementById("cost").value = item.cost || "";
-  document.getElementById("flood").value = item.floodFactor || "";
-  document.getElementById("topo").value = item.topography || "";
-  document.getElementById("desc").value = item.description || "";
-  document.getElementById("interest").value = item.interest;
-  document.getElementById("sqft").value = item.sqft || "";
-  document.getElementById("beds").value = item.beds || "";
-  document.getElementById("baths").value = item.baths || "";
-  document.getElementById("houseFields").style.display = item.type === "house" ? "block" : "none";
-  window.scrollTo(0, 0);
-};
-
-// Unified Submit
-document.getElementById("form").onsubmit = async (e) => {
-  e.preventDefault();
-  const data = {
-    type: document.getElementById("type").value,
-    address: document.getElementById("address").value,
-    acres: getNumber("acres"),
-    cost: getNumber("cost"),
-    floodFactor: getNumber("flood"),
-    topography: document.getElementById("topo").value,
-    description: document.getElementById("desc").value,
-    interest: document.getElementById("interest").value,
-    sqft: getNumber("sqft"),
-    beds: getNumber("beds"),
-    baths: getNumber("baths")
+  const firebaseConfig = {
+    apiKey: "AIzaSyAkEAZd2EDvEj3Kv6FCtXv8aWpIG-Rwq6A",
+    authDomain: "real-estate-assessor.firebaseapp.com",
+    projectId: "real-estate-assessor",
+    storageBucket: "real-estate-assessor.firebasestorage.app",
+    messagingSenderId: "355094026419",
+    appId: "1:355094026419:web:bcd1b78e93f697382af8c6"
   };
 
-  if (editId) {
-    await updateDoc(doc(db, "listings", editId), data);
-    editId = null;
-  } else {
-    await addDoc(collection(db, "listings"), data);
-  }
-  e.target.reset();
-  document.getElementById("houseFields").style.display = "none";
-};
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  enableIndexedDbPersistence(db).catch(console.error);
 
-// Listeners
-onSnapshot(collection(db, "listings"), (s) => { listings = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
-document.getElementById("search").oninput = render;
-document.getElementById("filter").onchange = render;
-document.getElementById("type").onchange = (e) => document.getElementById("houseFields").style.display = e.target.value === "house" ? "block" : "none";
+  let listings = [];
+  let openId = null;
+  let editId = null;
+
+  const listDiv = document.getElementById("listings");
+
+  // Helpers
+  const getNumber = (id) => {
+    const val = document.getElementById(id).value;
+    return val === "" ? null : parseFloat(val);
+  };
+  const formatMoney = (num) => num != null ? `$${num.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : "";
+  const formatNumber = (num) => num != null ? num : "";
+
+  // 🎯 RENDER FUNCTION
+  function render() {
+    const search = document.getElementById("search").value.toLowerCase();
+    const filter = document.getElementById("filter").value;
+    listDiv.innerHTML = "";
+
+    listings
+      .filter(item => (item.address?.toLowerCase().includes(search) || false) && (filter === "all" || item.interest === filter))
+      .forEach(item => {
+        const div = document.createElement("div");
+        div.className = `card ${item.interest}`;
+        div.innerHTML = `
+          <div class="card-header">
+            <strong>${item.address}</strong>
+            <span>${openId === item.id ? '▲' : '▼'}</span>
+          </div>
+          ${openId === item.id ? `
+            <div class="card-body">
+              <p><b>Type:</b> ${item.type}</p>
+              ${item.type === 'house' ? `<p>${formatNumber(item.sqft)} sqft | ${formatNumber(item.beds)} bed | ${formatNumber(item.baths)} bath</p>` : ""}
+              <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
+              <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
+              <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
+              <p>${item.description || ""}</p>
+              <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="edit" style="margin: 0; background: #3b82f6;">Edit</button>
+                <button class="delete" style="margin: 0; background: #ef4444;">Delete</button>
+              </div>
+            </div>
+          ` : ""}`;
+
+        div.querySelector(".card-header").onclick = () => { openId = openId === item.id ? null : item.id; render(); };
+        div.querySelector(".delete")?.onclick = async () => {
+          if (confirm("Delete this property?")) await deleteDoc(doc(db, "listings", item.id));
+        };
+        div.querySelector(".edit")?.onclick = () => editItem(item);
+        listDiv.appendChild(div);
+      });
+  }
+
+  // Edit handler
+  const editItem = (item) => {
+    editId = item.id;
+    document.getElementById("type").value = item.type;
+    document.getElementById("address").value = item.address;
+    document.getElementById("acres").value = item.acres || "";
+    document.getElementById("cost").value = item.cost || "";
+    document.getElementById("flood").value = item.floodFactor || "";
+    document.getElementById("topo").value = item.topography || "";
+    document.getElementById("desc").value = item.description || "";
+    document.getElementById("interest").value = item.interest;
+    document.getElementById("sqft").value = item.sqft || "";
+    document.getElementById("beds").value = item.beds || "";
+    document.getElementById("baths").value = item.baths || "";
+    document.getElementById("houseFields").style.display = item.type === "house" ? "block" : "none";
+    window.scrollTo(0, 0);
+  };
+
+  // Unified Submit
+  document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {
+      type: document.getElementById("type").value,
+      address: document.getElementById("address").value,
+      acres: getNumber("acres"),
+      cost: getNumber("cost"),
+      floodFactor: getNumber("flood"),
+      topography: document.getElementById("topo").value,
+      description: document.getElementById("desc").value,
+      interest: document.getElementById("interest").value,
+      sqft: getNumber("sqft"),
+      beds: getNumber("beds"),
+      baths: getNumber("baths")
+    };
+
+    if (editId) {
+      await updateDoc(doc(db, "listings", editId), data);
+      editId = null;
+    } else {
+      await addDoc(collection(db, "listings"), data);
+    }
+    e.target.reset();
+    document.getElementById("houseFields").style.display = "none";
+  };
+
+  // Listeners
+  onSnapshot(collection(db, "listings"), (s) => { listings = s.docs.map(d => ({ id: d.id, ...d.data() })); render(); });
+  document.getElementById("search").oninput = render;
+  document.getElementById("filter").onchange = render;
+  document.getElementById("type").onchange = (e) => document.getElementById("houseFields").style.display = e.target.value === "house" ? "block" : "none";
+
+  // Status Check
+  function updateStatus() {
+    const el = document.getElementById("status");
+    el.textContent = navigator.onLine ? "🟢 Online" : "🔴 Offline";
+  }
+  window.addEventListener("online", updateStatus);
+  window.addEventListener("offline", updateStatus);
+  updateStatus();
 </script>
 </body>
 </html>
