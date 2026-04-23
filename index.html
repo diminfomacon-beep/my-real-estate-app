@@ -113,7 +113,7 @@ import {
   collection,
   addDoc,
   onSnapshot,
-  deleteDoc,
+  Doc,
   doc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -191,7 +191,10 @@ function render() {
             <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
             <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
             <p>${item.description || ""}</p>
+           <div class="card-body">
+            <button class="edit">Edit</button>
             <button class="delete">Delete</button>
+          </div>
           </div>
         ` : ""}
       `;
@@ -213,6 +216,10 @@ function render() {
       }
 
       listDiv.appendChild(div);
+      const editBtn = div.querySelector(".edit");
+      if (editBtn) {
+        editBtn.onclick = () => editItem(item);
+      }
     });
 }
 
@@ -224,7 +231,6 @@ document.getElementById("type").onchange = (e) => {
   document.getElementById("houseFields").style.display =
     e.target.value === "house" ? "block" : "none";
 };
-
 // SUBMIT
 document.getElementById("form").onsubmit = async (e) => {
   e.preventDefault();
@@ -244,6 +250,45 @@ document.getElementById("form").onsubmit = async (e) => {
   };
 
   await addDoc(collection(db, "listings"), data);
+
+  e.target.reset();
+};
+    let editId = null; // Add this with your other variables
+
+// Function to populate form for editing
+const editItem = (item) => {
+  editId = item.id;
+  document.getElementById("type").value = item.type;
+  document.getElementById("address").value = item.address;
+  document.getElementById("acres").value = item.acres || "";
+  document.getElementById("cost").value = item.cost || "";
+  document.getElementById("flood").value = item.floodFactor || "";
+  document.getElementById("topo").value = item.topography || "";
+  document.getElementById("desc").value = item.description || "";
+  document.getElementById("interest").value = item.interest;
+  document.getElementById("sqft").value = item.sqft || "";
+  document.getElementById("beds").value = item.beds || "";
+  document.getElementById("baths").value = item.baths || "";
+  
+  // Trigger house fields visibility
+  document.getElementById("houseFields").style.display = item.type === "house" ? "block" : "none";
+  window.scrollTo(0, 0); // Scroll up to see the form
+};
+  // Add updateDoc to your import list:
+import { ..., updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Update the submit event listener:
+document.getElementById("form").onsubmit = async (e) => {
+  e.preventDefault();
+  
+  const data = { /* ... your data object ... */ };
+
+  if (editId) {
+    await updateDoc(doc(db, "listings", editId), data);
+    editId = null; // Reset state
+  } else {
+    await addDoc(collection(db, "listings"), data);
+  }
 
   e.target.reset();
 };
