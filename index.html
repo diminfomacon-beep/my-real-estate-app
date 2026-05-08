@@ -154,38 +154,54 @@ button.delete {
       .forEach(item => {
         const div = document.createElement("div");
         div.className = `card ${item.interest}`;
-        div.innerHTML = `
-          <div class="card-header">
-            <strong>${item.address}</strong>
-            <span>${openId === item.id ? '▲' : '▼'}</span>
+// ... inside the forEach loop in render() ...
+    
+    div.innerHTML = `
+      <div class="card-header">
+        <strong>${item.address}</strong>
+        <span>${openId === item.id ? '▲' : '▼'}</span>
+      </div>
+      ${openId === item.id ? `
+        <div class="card-body">
+          <p><b>Type:</b> ${item.type}</p>
+          ${item.type === 'house' ? `<p>${formatNumber(item.sqft)} sqft | ${formatNumber(item.beds)} bed | ${formatNumber(item.baths)} bath</p>` : ""}
+          <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
+          <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
+          <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
+          <p>${item.description || ""}</p>
+          <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button class="edit-btn" style="margin: 0; background: #3b82f6; width: 50px;">✏️</button>
+            <button class="delete-btn" style="margin: 0; background: #ef4444; flex-grow: 1;">Delete</button>
           </div>
-          ${openId === item.id ? `
-            <div class="card-body">
-              <p><b>Type:</b> ${item.type}</p>
-              ${item.type === 'house' ? `<p>${formatNumber(item.sqft)} sqft | ${formatNumber(item.beds)} bed | ${formatNumber(item.baths)} bath</p>` : ""}
-              <p><b>Cost:</b> ${formatMoney(item.cost)}</p>
-              <p><b>Acres:</b> ${formatNumber(item.acres)}</p>
-              <p><b>Flood:</b> ${formatNumber(item.floodFactor)}</p>
-              <p>${item.description || ""}</p>
-              <div style="display: flex; gap: 10px; margin-top: 15px;">
-                <button class="edit" style="margin: 0; background: #3b82f6; width: 50px;">✏️</button>
-                <button class="delete" style="margin: 0; background: #ef4444; flex-grow: 1;">Delete</button>
-              </div>
-            </div>
-          ` : ""}`;
-
-        div.querySelector(".card-header").onclick = () => { openId = openId === item.id ? null : item.id; render(); };
-        
-        div.addEventListener("click", async (e) => {
-          if (e.target.classList.contains("delete")) {
-            if (confirm("Delete this property?")) await deleteDoc(doc(db, "listings", item.id));
-          }
-          if (e.target.classList.contains("edit")) {
-            editItem(item);
-          }
-        });
-        
-        listDiv.appendChild(div);
+        </div>
+      ` : ""}`;
+    
+    // Select elements specifically
+    const header = div.querySelector(".card-header");
+    header.onclick = (e) => {
+      e.stopPropagation(); // Prevents the click from bubbling up
+      openId = openId === item.id ? null : item.id;
+      render();
+    };
+    
+    if (openId === item.id) {
+      const editBtn = div.querySelector(".edit-btn");
+      const delBtn = div.querySelector(".delete-btn");
+    
+      editBtn.onclick = (e) => {
+        e.stopPropagation();
+        editItem(item);
+      };
+    
+      delBtn.onclick = async (e) => {
+        e.stopPropagation();
+        if (confirm("Delete this property?")) {
+          await deleteDoc(doc(db, "listings", item.id));
+        }
+      };
+    }
+    
+    listDiv.appendChild(div);
       });
   }
 
